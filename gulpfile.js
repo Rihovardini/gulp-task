@@ -41,13 +41,13 @@ gulp.task('concat', () => {
 
 
 
-gulp.task('uglify',()=>{
+gulp.task('uglify', () => {
         return gulp.src('src/temp/*.js')
             .pipe(uglify())
             .pipe(gulp.dest('buid'));
 })
 
-gulp.task('del', ()=>{
+gulp.task('del', () => {
      return gulp.src('buid')
             .pipe(rm());
 });
