@@ -6,8 +6,12 @@ const copy = require ('gulp-copy');
 const concat = require ('gulp-concat');
 const uglify = require ('gulp-uglify');
 const rm = require ('gulp-rm'); 
-const browserSync = require('browser-sync').create();
-const livereload = require('gulp-livereload');
+const browserSync = require ('browser-sync').create();
+const livereload = require ('gulp-livereload');
+const pump = require ('pump');
+const directoryExists = require ('directory-exists');
+const minify = require ('gulp-minify');
+const del = require('del');
 
 
 gulp.task('hint', () => {
@@ -39,15 +43,17 @@ gulp.task('concat', () => {
           .pipe(gulp.dest('buid'))
 });
 
+gulp.task('compress', function (cb) {
+    pump([
+          gulp.src('src/temp/*.js'),
+          uglify(),
+          gulp.dest('buid')
+      ],
+      cb
+    );
+  });
 
-
-gulp.task('uglify', () => {
-        return gulp.src('src/temp/*.js')
-            .pipe(uglify())
-            .pipe(gulp.dest('buid'));
-})
-
-gulp.task('del', () => {
+gulp.task('del', ()=>{
      return gulp.src('buid')
             .pipe(rm());
 });
@@ -56,7 +62,7 @@ gulp.task('less', () => {
      return gulp.src('./src/temp/*.less')
         .pipe(less())
         .pipe(gulp.dest('./buid'))
-        //.pipe(browserSync.stream())
+        .pipe(browserSync.stream())
         .pipe(livereload());
     });
 
@@ -70,10 +76,40 @@ gulp.task('serve', ['less'], () => {
         gulp.watch("./buid/*.html").on('change', browserSync.reload);
     });
 
+gulp.task('prod', () =>{
+    directoryExists('prod')
+        .then(result => {
+            if(result){
+                return del('prod');
+            }
+            else{
+                gulp.src('./buid/*.css')
+                    .pipe(copy('prod/css',{
+                        prefix:1 
+                    }));
 
-gulp.task('server', () => {
-    livereload.listen()
+                gulp.src('./src/temp/index.jade')
+                    .pipe(copy('prod',{
+                        prefix:2 
+                    }));
+                
+                gulp.src('./src/temp/*.js')
+                    .pipe(copy('prod/js',{
+                        prefix:2
+                    }))
+                    .pipe(minify());
+                
+                    //gulp.src('prod/js/*.js')
+                        
+                   
+                    
+            }
+        });
+});
+
+gulp.task('default', () => {
+    livereload.listen();
     gulp.watch("./src/temp/*.less", ['less']);
     gulp.watch('./src/temp/*.js',['js']);
-    gulp.watch("./*.html").on('change', livereload.changed);
+    
 })
